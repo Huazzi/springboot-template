@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chaoxing.template.user.mapper.UserMapper">
+
+  <resultMap id="UserResultMap" type="com.chaoxing.template.user.entity.UserEntity">
+    <id column="id" property="id"/>
+    <result column="username" property="username"/>
+    <result column="nickname" property="nickname"/>
+    <result column="email" property="email"/>
+    <result column="mobile" property="mobile"/>
+    <result column="status" property="status"/>
+    <result column="deleted" property="deleted"/>
+    <result column="created_at" property="createdAt"/>
+    <result column="updated_at" property="updatedAt"/>
+  </resultMap>
+
+  <sql id="BaseColumns">
+    id,
+    username,
+    nickname,
+    email,
+    mobile,
+    status,
+    deleted,
+    created_at,
+    updated_at
+  </sql>
+
+  <sql id="ActiveUserWhere">
+    deleted = 0
+    <if test="query.username != null and query.username != ''">
+      AND username LIKE CONCAT('%', #{query.username}, '%')
+    </if>
+    <if test="query.nickname != null and query.nickname != ''">
+      AND nickname LIKE CONCAT('%', #{query.nickname}, '%')
+    </if>
+    <if test="query.status != null">
+      AND status = #{query.status}
+    </if>
+  </sql>
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+    INSERT INTO sys_user (
+      username,
+      nickname,
+      email,
+      mobile,
+      status,
+      deleted,
+      created_at,
+      updated_at
+    ) VALUES (
+      #{username},
+      #{nickname},
+      #{email},
+      #{mobile},
+      #{status},
+      0,
+      CURRENT_TIMESTAMP,
+      CURRENT_TIMESTAMP
+    )
+  </insert>
+
+  <select id="selectById" resultMap="UserResultMap">
+    SELECT
+    <include refid="BaseColumns"/>
+    FROM sys_user
+    WHERE id = #{id}
+      AND deleted = 0
+  </select>
+
+  <select id="countByUsername" resultType="int">
+    SELECT COUNT(1)
+    FROM sys_user
+    WHERE username = #{username}
+      AND deleted = 0
+  </select>
+
+  <select id="countByCondition" resultType="long">
+    SELECT COUNT(1)
+    FROM sys_user
+    WHERE
+    <include refid="ActiveUserWhere"/>
+  </select>
+
+  <select id="selectPage" resultMap="UserResultMap">
+    SELECT
+    <include refid="BaseColumns"/>
+    FROM sys_user
+    WHERE
+    <include refid="ActiveUserWhere"/>
+    ORDER BY id DESC
+    LIMIT #{pageSize} OFFSET #{offset}
+  </select>
+
+  <update id="updateById">
+    UPDATE sys_user
+    <set>
+      <if test="nickname != null">
+        nickname = #{nickname},
+      </if>
+      <if test="email != null">
+        email = #{email},
+      </if>
+      <if test="mobile != null">
+        mobile = #{mobile},
+      </if>
+      <if test="status != null">
+        status = #{status},
+      </if>
+      updated_at = CURRENT_TIMESTAMP
+    </set>
+    WHERE id = #{id}
+      AND deleted = 0
+  </update>
+
+  <update id="logicDeleteById">
+    UPDATE sys_user
+    SET deleted = 1,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = #{id}
+      AND deleted = 0
+  </update>
+</mapper>
