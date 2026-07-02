@@ -57,3 +57,15 @@ curl -X POST http://localhost:8080/api/v1/users `
 
 curl "http://localhost:8080/api/v1/users?pageNo=1&pageSize=10&username=alice"
 ```
+
+## 质量门禁
+```powershell
+cd D:\Codes\standard-java-coding\spring-boot-template
+.\mvnw.cmd clean verify
+```
+包含：
+- Spotless 
+- Checkstyle 
+- 编译 
+- 单元测试 
+- 打包

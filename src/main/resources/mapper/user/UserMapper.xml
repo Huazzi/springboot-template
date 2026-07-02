@@ -28,6 +28,7 @@
     updated_at
   </sql>
 
+  <!-- count 和 page 查询复用同一段条件，确保逻辑删除过滤规则一致。 -->
   <sql id="ActiveUserWhere">
     deleted = 0
     <if test="query.username != null and query.username != ''">
@@ -78,6 +79,7 @@
       AND deleted = 0
   </select>
 
+  <!-- countByCondition 和 selectPage 必须使用相同过滤条件，避免分页总数不准确。 -->
   <select id="countByCondition" resultType="long">
     SELECT COUNT(1)
     FROM sys_user

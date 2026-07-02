@@ -18,6 +18,7 @@ public class TraceIdFilter extends OncePerRequestFilter {
 
   public static final String HEADER_TRACE_ID = "X-Trace-Id";
 
+  /** 为一次请求绑定一个 traceId，并在请求结束后清理线程上下文。 */
   @Override
   protected void doFilterInternal(
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -32,6 +33,7 @@ public class TraceIdFilter extends OncePerRequestFilter {
     }
   }
 
+  /** 优先使用调用方传入的 traceId，方便和上游系统日志串联。 */
   private String resolveTraceId(HttpServletRequest request) {
     String traceId = request.getHeader(HEADER_TRACE_ID);
     if (StringUtils.hasText(traceId)) {

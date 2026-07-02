@@ -12,6 +12,7 @@ public final class PageResult<T> {
   private final long pageSize;
   private final long pages;
 
+  /** 防御性复制列表，避免响应创建后被调用方继续修改。 */
   private PageResult(List<T> records, long total, long pageNo, long pageSize) {
     this.records = records == null ? List.of() : List.copyOf(records);
     this.total = Math.max(total, 0);
@@ -20,6 +21,7 @@ public final class PageResult<T> {
     this.pages = calculatePages(this.total, this.pageSize);
   }
 
+  /** 在分页响应边界统一修正非法分页参数，让调用方拿到稳定结构。 */
   public static <T> PageResult<T> of(List<T> records, long total, long pageNo, long pageSize) {
     return new PageResult<>(records, total, pageNo, pageSize);
   }

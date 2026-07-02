@@ -15,6 +15,7 @@ public final class ApiResult<T> {
   private final String traceId;
   private final LocalDateTime timestamp;
 
+  /** 统一通过工厂方法创建响应，确保 code、message、traceId 的生成规则一致。 */
   private ApiResult(String code, String message, T data, String traceId) {
     this.code = code;
     this.message = message;
@@ -23,10 +24,12 @@ public final class ApiResult<T> {
     this.timestamp = LocalDateTime.now();
   }
 
+  /** 构造无响应体的成功结果，常用于更新、删除等接口。 */
   public static <T> ApiResult<T> success() {
     return success(null);
   }
 
+  /** 构造带数据的成功结果，并附带当前请求 traceId，便于排查问题。 */
   public static <T> ApiResult<T> success(T data) {
     return new ApiResult<>(
         ErrorCode.SUCCESS.getCode(),
@@ -35,6 +38,7 @@ public final class ApiResult<T> {
         TraceIdHolder.getOrCreateTraceId());
   }
 
+  /** 使用错误码默认文案构造失败结果。 */
   public static <T> ApiResult<T> fail(ErrorCode errorCode) {
     ErrorCode resolvedErrorCode = Objects.requireNonNull(errorCode, "errorCode must not be null");
     return fail(resolvedErrorCode, resolvedErrorCode.getMessage(), null);
@@ -44,6 +48,7 @@ public final class ApiResult<T> {
     return fail(errorCode, message, null);
   }
 
+  /** 构造带明细数据的失败结果，可用于字段校验错误或业务冲突详情。 */
   public static <T> ApiResult<T> fail(ErrorCode errorCode, String message, T data) {
     ErrorCode resolvedErrorCode = Objects.requireNonNull(errorCode, "errorCode must not be null");
     String resolvedMessage =

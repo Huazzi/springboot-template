@@ -7,6 +7,10 @@ import org.springframework.http.HttpStatus;
 @Getter
 @RequiredArgsConstructor
 public enum ErrorCode {
+  /*
+   * 错误码按类别分组：
+   * 00000 表示成功，A04xx 表示客户端或请求问题，Bxxxx 表示业务或系统失败。
+   */
   SUCCESS("00000", "成功", HttpStatus.OK),
   PARAM_INVALID("A0400", "请求参数错误", HttpStatus.BAD_REQUEST),
   UNAUTHORIZED("A0401", "未认证", HttpStatus.UNAUTHORIZED),

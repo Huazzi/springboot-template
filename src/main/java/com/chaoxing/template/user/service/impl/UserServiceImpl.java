@@ -43,6 +43,7 @@ public class UserServiceImpl implements UserService {
     try {
       userMapper.insert(entity);
     } catch (DuplicateKeyException exception) {
+      // 唯一索引用于兜底处理多个并发请求同时通过前置检查的情况。
       throw new BusinessException("用户名已存在");
     }
     return getById(entity.getId());
@@ -59,6 +60,7 @@ public class UserServiceImpl implements UserService {
     long pageSize = Math.min(Math.max(request.getPageSize(), 1), 100);
     long total = userMapper.countByCondition(request);
     if (total == 0) {
+      // 即使没有匹配记录，也返回规范化后的分页信息。
       return PageResult.empty(pageNo, pageSize);
     }
 
@@ -79,6 +81,7 @@ public class UserServiceImpl implements UserService {
     entity.setStatus(request.getStatus());
 
     if (!hasUpdateContent(entity)) {
+      // 避免执行只刷新 updated_at、没有任何业务字段变化的 UPDATE。
       throw new BusinessException(ErrorCode.PARAM_INVALID, "至少提供一个待更新字段");
     }
 
@@ -120,6 +123,7 @@ public class UserServiceImpl implements UserService {
     if (!StringUtils.hasText(value)) {
       return null;
     }
+    // 统一清洗空白输入，让 SQL 条件和更新判断保持简单。
     return value.trim();
   }
 }
