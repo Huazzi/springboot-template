@@ -7,8 +7,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.chaoxing.template.common.exception.BusinessException;
 import com.chaoxing.template.common.exception.ErrorCode;
+import com.chaoxing.template.common.exception.ServiceException;
 import com.chaoxing.template.common.response.PageResult;
 import com.chaoxing.template.user.entity.UserEntity;
 import com.chaoxing.template.user.mapper.UserMapper;
@@ -67,7 +67,7 @@ class UserServiceImplTest {
     when(userMapper.countByUsername("alice")).thenReturn(1);
 
     assertThatThrownBy(() -> userService.create(request))
-        .isInstanceOf(BusinessException.class)
+        .isInstanceOf(ServiceException.class)
         .hasMessage("用户名已存在");
     verify(userMapper, never()).insert(any());
   }
@@ -95,7 +95,7 @@ class UserServiceImplTest {
     UserUpdateRequest request = new UserUpdateRequest();
 
     assertThatThrownBy(() -> userService.update(1L, request))
-        .isInstanceOf(BusinessException.class)
+        .isInstanceOf(ServiceException.class)
         .hasMessage("至少提供一个待更新字段");
     verify(userMapper, never()).updateById(any());
   }
@@ -106,7 +106,7 @@ class UserServiceImplTest {
 
     assertThatThrownBy(() -> userService.delete(1L))
         .isInstanceOfSatisfying(
-            BusinessException.class,
+            ServiceException.class,
             exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.NOT_FOUND));
   }
 

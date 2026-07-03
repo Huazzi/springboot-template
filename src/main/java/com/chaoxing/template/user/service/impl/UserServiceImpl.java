@@ -1,7 +1,7 @@
 package com.chaoxing.template.user.service.impl;
 
-import com.chaoxing.template.common.exception.BusinessException;
 import com.chaoxing.template.common.exception.ErrorCode;
+import com.chaoxing.template.common.exception.ServiceException;
 import com.chaoxing.template.common.response.PageResult;
 import com.chaoxing.template.user.entity.UserEntity;
 import com.chaoxing.template.user.mapper.UserMapper;
@@ -30,7 +30,7 @@ public class UserServiceImpl implements UserService {
   public UserResponse create(UserCreateRequest request) {
     String username = trimToNull(request.getUsername());
     if (userMapper.countByUsername(username) > 0) {
-      throw new BusinessException("用户名已存在");
+      throw new ServiceException("用户名已存在");
     }
 
     UserEntity entity = new UserEntity();
@@ -44,7 +44,7 @@ public class UserServiceImpl implements UserService {
       userMapper.insert(entity);
     } catch (DuplicateKeyException exception) {
       // 唯一索引用于兜底处理多个并发请求同时通过前置检查的情况。
-      throw new BusinessException("用户名已存在");
+      throw new ServiceException("用户名已存在");
     }
     return getById(entity.getId());
   }
@@ -82,7 +82,7 @@ public class UserServiceImpl implements UserService {
 
     if (!hasUpdateContent(entity)) {
       // 避免执行只刷新 updated_at、没有任何业务字段变化的 UPDATE。
-      throw new BusinessException(ErrorCode.PARAM_INVALID, "至少提供一个待更新字段");
+      throw new ServiceException(ErrorCode.PARAM_INVALID, "至少提供一个待更新字段");
     }
 
     int updated = userMapper.updateById(entity);
@@ -115,8 +115,8 @@ public class UserServiceImpl implements UserService {
         || entity.getStatus() != null;
   }
 
-  private BusinessException userNotFoundException() {
-    return new BusinessException(ErrorCode.NOT_FOUND, "用户不存在");
+  private ServiceException userNotFoundException() {
+    return new ServiceException(ErrorCode.NOT_FOUND, "用户不存在");
   }
 
   private String trimToNull(String value) {

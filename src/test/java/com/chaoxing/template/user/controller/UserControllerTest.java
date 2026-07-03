@@ -76,7 +76,8 @@ class UserControllerTest {
         .andExpect(header().string(TraceIdFilter.HEADER_TRACE_ID, TRACE_ID))
         .andExpect(jsonPath("$.code").value(ErrorCode.SUCCESS.getCode()))
         .andExpect(jsonPath("$.data.id").value(1))
-        .andExpect(jsonPath("$.data.username").value("alice"));
+        .andExpect(jsonPath("$.data.username").value("alice"))
+        .andExpect(jsonPath("$.data.createdAt").value("2026-07-02 10:00:00.000"));
 
     ArgumentCaptor<UserCreateRequest> captor = ArgumentCaptor.forClass(UserCreateRequest.class);
     verify(userService).create(captor.capture());

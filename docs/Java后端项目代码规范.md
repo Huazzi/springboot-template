@@ -1,8 +1,5 @@
 # Java 后端项目代码规范
 
-> 适用范围：基于 JDK 17、Spring Boot 3.5.x、Maven 3.9.16、MySQL 8.4.10、
-> MyBatis、Lombok 的后端项目。
-
 ## 1. 规范分级
 
 规范不是为了增加流程负担，而是为了减少协作成本。本文把规则分为三类：
@@ -26,12 +23,14 @@
 
 必须遵守：
 
-- `main`：生产可发布分支，只接受已验证代码。
+- `master`：生产可发布分支，只接受已验证代码。
 - `develop`：日常集成分支，承载下一次发布内容。
 - `feature/<issue>-<short-desc>`：功能开发，例如 `feature/123-user-page`。
 - `fix/<issue>-<short-desc>`：缺陷修复，例如 `fix/245-user-delete`。
 - `hotfix/<issue>-<short-desc>`：线上紧急修复。
 - `release/<version>`：发布准备分支，例如 `release/1.2.0`。
+
+当前约定：`master_业务名称`
 
 推荐遵守：
 
@@ -40,12 +39,12 @@
 
 团队约定：
 
-- 合并到 `main` 或 `develop` 前必须通过 `mvnw.cmd clean verify`。
+- 合并到 `master` 或 `develop` **前**必须通过 `mvnw.cmd clean verify`检查。
 - 大范围格式化应单独提交，避免掩盖真实业务改动。
 
 ## 3. Git 提交规范
 
-为什么：提交信息是长期维护时的线索。采用 Conventional Commits 可以自动生成变更日志，也方便快速定位风险。
+为什么：提交信息是长期维护时的线索。采用 Conventional Commits （约束式提交）可以自动生成变更日志，也方便快速定位风险。
 
 必须遵守：
 
@@ -79,10 +78,6 @@ test(user): 创建用户验证
 - `subject` 使用祈使句或简短动宾短语。
 - 一次提交表达一个完整意图。
 
-团队约定：
-
-- 破坏性变更在正文中写 `BREAKING CHANGE:` 并说明迁移方式。
-
 ## 4. Maven 项目结构规范
 
 为什么：结构稳定后，新成员能快速找到入口、配置、SQL、测试与文档，减少“靠问人”的隐性成本。
@@ -106,14 +101,26 @@ spring-boot-template/
 必须遵守：
 
 - Java 版本统一为约定版本。
-- Maven Wrapper 固定 Maven 版本，团队优先使用 `mvnw.cmd` 或 `./mvnw`。
+
+- **Maven Wrapper 固定 Maven 版本**：
+
+  - ```bash
+    # 使用 Maven Wrapper 指定 Maven 版本
+    mvn wrapper:wrapper "-Dmaven=3.9.16"
+    
+    # 执行完后会在根目录下生成文件：mvnw、mvnw.cmd、.mvn/wrapper/maven-wrapper.properties
+    ```
+
+  - `mvnw.cmd`为 Windows 用的启动脚本 ； `mvnw`为 Linux/MacOS 用的启动脚本；`maven-wrapper.properties`：记录要下载和使用哪个 Maven 版本。
+
 - 依赖版本优先交给 Spring Boot parent/BOM 管理，不随意手写版本。
+
 - MyBatis Starter 使用与 Spring Boot 兼容的版本线。
 
 推荐遵守：
 
-- 业务 SQL 初始化文件放在 `sql/`，命名使用序号前缀，例如 `001_create_user_table.sql`。
-- 配置文件按环境拆分为 `application-local.yml`、`application-dev.yml`、`application-prod.yml`。
+- 业务 SQL 初始化文件放在 `resources/sql/`，命名使用序号前缀，例如 `001_create_user_table.sql`。
+- 配置文件按环境拆分为 `application-local.yml`、`application-test.yml`、`application-prod.yml`。
 
 ## 5. Java 包结构规范
 
@@ -153,8 +160,10 @@ com.<公司名>.<项目名>
     service.impl
     mapper
     entity
-    request
-    response
+    model
+   	  dto
+  	    request
+  	    response
 ```
 
 - 简单后台、教学示例或团队已有强约定时，也可以采用“按技术分层”的包结构：
@@ -176,9 +185,12 @@ com.<公司名>.<项目名>
   entity
     UserEntity
     OrderEntity
-  request
-  response
+  model
+  	dto
+  	  request
+  	  response
 ```
+请求和响应体结构：`model.dto.request` 和 `model.dto.response`
 
 - 当业务模块逐渐变多时，推荐从“按技术分层”演进为“按业务领域聚合”。原因是后者把同一个业务的 Controller、Service、Mapper、Entity、Request、Response 放得更近，改一个业务时更容易定位相关代码，也更容易控制模块边界。
 - 不要过早拆多模块 Maven。只有当代码规模、发布节奏或依赖边界真的需要独立时，再考虑 Maven 多模块。
@@ -207,7 +219,7 @@ com.<公司名>.<项目名>
 
 团队约定：
 
-- 查询不存在的数据时，Service 抛出 `BusinessException(ErrorCode.NOT_FOUND, "...")`。
+- 查询不存在的数据时，Service 抛出 `ServiceException(ErrorCode.NOT_FOUND, "...")`。
 - 删除默认逻辑删除，除非业务明确要求物理删除并经过评审。
 
 ## 7. Entity、Request、Response 使用规范
@@ -265,7 +277,7 @@ com.<公司名>.<项目名>
 
 必须遵守：
 
-成功响应统一使用 `ApiResult<T>`：
+成功响应统一使用 `Result<T>`：
 
 ```json
 {
@@ -273,7 +285,7 @@ com.<公司名>.<项目名>
   "message": "成功",
   "data": {},
   "traceId": "request-trace-id",
-  "timestamp": "2026-07-02T12:00:00"
+  "timestamp": "2026-07-02 12:00:00.000" (采用毫秒)
 }
 ```
 
@@ -281,7 +293,7 @@ com.<公司名>.<项目名>
 
 ```json
 {
-  "records": [],
+  "data": [],
   "total": 0,
   "pageNo": 1,
   "pageSize": 10,
@@ -292,7 +304,7 @@ com.<公司名>.<项目名>
 必须遵守：
 
 - Controller 不直接返回裸对象。
-- 分页接口返回 `ApiResult<PageResult<Response>>`。
+- 分页接口返回 `Result<PageResult<Response>>`。
 - 错误响应也包含 `traceId`，便于排查。
 
 推荐遵守：
@@ -311,10 +323,10 @@ com.<公司名>.<项目名>
 
 必须遵守：
 
-- 业务异常使用 `BusinessException`。
+- 业务异常使用 `ServiceException`。
 - 错误码统一放在 `ErrorCode`。
 - 使用 `GlobalExceptionHandler` 统一处理：
-  - `BusinessException`
+  - `SerivceException`
   - 参数校验异常
   - 请求体解析异常
   - HTTP method/media type 不支持
@@ -347,8 +359,8 @@ com.<公司名>.<项目名>
 
 ```java
 @PostMapping
-public ApiResult<UserResponse> create(@Valid @RequestBody UserCreateRequest request) {
-  return ApiResult.success(userService.create(request));
+public Result<UserResponse> create(@Valid @RequestBody UserCreateRequest request) {
+  return Result.success(userService.create(request));
 }
 ```
 
@@ -378,7 +390,6 @@ public ApiResult<UserResponse> create(@Valid @RequestBody UserCreateRequest requ
 - 正常业务流程不滥用 `info`。
 - 可预期业务失败使用 `warn`。
 - 系统异常使用 `error` 并带异常堆栈。
-- SQL 调试日志只在 local/dev 环境开启。
 
 团队约定：
 
@@ -448,7 +459,6 @@ public ApiResult<UserResponse> create(@Valid @RequestBody UserCreateRequest requ
 推荐遵守：
 
 - 只读查询不加事务，除非有一致性要求。
-- 单表单语句写入可不强制加事务，但模板中允许统一加在写 Service 上。
 
 团队约定：
 
@@ -462,7 +472,7 @@ public ApiResult<UserResponse> create(@Valid @RequestBody UserCreateRequest requ
 
 - 公共配置放 `application.yml`。
 - 本地配置放 `application-local.yml`。
-- 开发环境配置放 `application-dev.yml`。
+- 开发环境配置放 `application-test.yml`。
 - 生产环境配置放 `application-prod.yml`。
 - 密码、token、密钥不得提交到仓库，使用环境变量注入。
 
@@ -470,7 +480,7 @@ public ApiResult<UserResponse> create(@Valid @RequestBody UserCreateRequest requ
 
 - 默认 profile 为 `local`。
 - 数据库连接用 `DB_URL`、`DB_USERNAME`、`DB_PASSWORD` 覆盖。
-- 生产环境关闭或收敛 debug 日志。
+- 生产环境关闭 或 收敛 debug 日志。
 
 团队约定：
 
@@ -491,12 +501,10 @@ public ApiResult<UserResponse> create(@Valid @RequestBody UserCreateRequest requ
 
 - Controller 测试关注路由、校验、统一响应结构。
 - Service 测试关注业务规则、异常、分页、事务前后的判断。
-- Mapper SQL 后续可使用集成测试或 Testcontainers 覆盖。
 
 团队约定：
 
 - 测试类放在与生产代码同包路径的 `src/test/java` 下。
-- MockMvc 测试可使用 standalone setup，让 Web 层测试更轻。
 
 ## 18. 基础安全规范
 
@@ -546,32 +554,11 @@ public ApiResult<UserResponse> create(@Valid @RequestBody UserCreateRequest requ
 
 团队约定：
 
-- Java 使用 google-java-format。
+- Java 使用 [阿里 Java开发规范](https://github.com/alibaba/p3c)。
 - 行宽上限为 100。
 - 使用 LF 换行，避免 Windows CRLF 与 CI 不一致。
 
-## 20. 团队落地建议
-
-为什么：规范真正生效，靠的是模板、工具、评审和持续维护，而不是一次性发文。
-
-必须遵守：
-
-- 新项目从模板创建，不从零手写基础设施。
-- PR 必须通过自动检查。
-- Code Review 优先看正确性、边界条件、事务、安全和测试，不把时间浪费在可自动修复的格式问题上。
-
-推荐遵守：
-
-- 每次规范调整都同步更新模板、README 和本文档。
-- 团队每隔一段时间回顾一次规范，删除无效规则，补齐高频问题。
-- 对历史项目分批迁移，不要求一次性大爆炸式改造。
-
-团队约定：
-
-- 规范例外必须写明原因，例如性能、兼容性、遗留系统约束。
-- 模板中的 User 模块作为新增业务模块的参考样例。
-
-## 21. 参考资料
+## 20.  参考资料
 
 - Spring Boot 官方项目页：https://spring.io/projects/spring-boot
 - Spring Boot 官方文档：https://docs.spring.io/spring-boot/

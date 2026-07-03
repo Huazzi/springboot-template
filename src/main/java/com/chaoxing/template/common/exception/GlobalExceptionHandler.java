@@ -1,6 +1,6 @@
 package com.chaoxing.template.common.exception;
 
-import com.chaoxing.template.common.response.ApiResult;
+import com.chaoxing.template.common.response.Result;
 import com.chaoxing.template.common.web.TraceIdHolder;
 import jakarta.validation.ConstraintViolationException;
 import java.util.LinkedHashMap;
@@ -25,10 +25,10 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 public class GlobalExceptionHandler {
 
   /** 业务异常属于预期内失败，使用 warn 日志即可。 */
-  @ExceptionHandler(BusinessException.class)
-  public ResponseEntity<ApiResult<Object>> handleBusinessException(BusinessException exception) {
+  @ExceptionHandler(ServiceException.class)
+  public ResponseEntity<Result<Object>> handleServiceException(ServiceException exception) {
     log.warn(
-        "Business exception, code={}, traceId={}, message={}",
+        "Service exception, code={}, traceId={}, message={}",
         exception.getErrorCode().getCode(),
         TraceIdHolder.getOrCreateTraceId(),
         exception.getMessage());
@@ -37,7 +37,7 @@ public class GlobalExceptionHandler {
 
   /** 处理 @RequestBody 参数上由 @Valid 触发的 JSON 请求体验证错误。 */
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<ApiResult<Object>> handleMethodArgumentNotValid(
+  public ResponseEntity<Result<Object>> handleMethodArgumentNotValid(
       MethodArgumentNotValidException exception) {
     Map<String, String> errors = collectFieldErrors(exception.getBindingResult().getFieldErrors());
     return buildResponse(ErrorCode.PARAM_INVALID, ErrorCode.PARAM_INVALID.getMessage(), errors);
@@ -45,14 +45,14 @@ public class GlobalExceptionHandler {
 
   /** 处理 query/form 参数绑定时的校验错误，例如 pageNo、pageSize 约束。 */
   @ExceptionHandler(BindException.class)
-  public ResponseEntity<ApiResult<Object>> handleBindException(BindException exception) {
+  public ResponseEntity<Result<Object>> handleBindException(BindException exception) {
     Map<String, String> errors = collectFieldErrors(exception.getBindingResult().getFieldErrors());
     return buildResponse(ErrorCode.PARAM_INVALID, ErrorCode.PARAM_INVALID.getMessage(), errors);
   }
 
   /** 处理方法级参数校验错误，例如路径变量上的 @Positive。 */
   @ExceptionHandler(ConstraintViolationException.class)
-  public ResponseEntity<ApiResult<Object>> handleConstraintViolation(
+  public ResponseEntity<Result<Object>> handleConstraintViolation(
       ConstraintViolationException exception) {
     Map<String, String> errors = new LinkedHashMap<>();
     exception
@@ -68,28 +68,28 @@ public class GlobalExceptionHandler {
     TypeMismatchException.class,
     HttpMessageNotReadableException.class
   })
-  public ResponseEntity<ApiResult<Object>> handleBadRequest(Exception exception) {
+  public ResponseEntity<Result<Object>> handleBadRequest(Exception exception) {
     return buildResponse(ErrorCode.PARAM_INVALID, exception.getMessage(), null);
   }
 
   @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-  public ResponseEntity<ApiResult<Object>> handleMethodNotSupported(Exception exception) {
+  public ResponseEntity<Result<Object>> handleMethodNotSupported(Exception exception) {
     return buildResponse(ErrorCode.METHOD_NOT_ALLOWED, exception.getMessage(), null);
   }
 
   @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-  public ResponseEntity<ApiResult<Object>> handleMediaTypeNotSupported(Exception exception) {
+  public ResponseEntity<Result<Object>> handleMediaTypeNotSupported(Exception exception) {
     return buildResponse(ErrorCode.MEDIA_TYPE_NOT_SUPPORTED, exception.getMessage(), null);
   }
 
   @ExceptionHandler({NoHandlerFoundException.class, NoResourceFoundException.class})
-  public ResponseEntity<ApiResult<Object>> handleNotFound(Exception exception) {
+  public ResponseEntity<Result<Object>> handleNotFound(Exception exception) {
     return buildResponse(ErrorCode.NOT_FOUND, ErrorCode.NOT_FOUND.getMessage(), null);
   }
 
   /** 未预期异常记录完整堆栈，但返回给客户端的响应结构保持稳定。 */
   @ExceptionHandler(Exception.class)
-  public ResponseEntity<ApiResult<Object>> handleUnexpectedException(Exception exception) {
+  public ResponseEntity<Result<Object>> handleUnexpectedException(Exception exception) {
     log.error("Unexpected exception, traceId={}", TraceIdHolder.getOrCreateTraceId(), exception);
     return buildResponse(ErrorCode.SYSTEM_ERROR, ErrorCode.SYSTEM_ERROR.getMessage(), null);
   }
@@ -103,10 +103,10 @@ public class GlobalExceptionHandler {
     return errors;
   }
 
-  private ResponseEntity<ApiResult<Object>> buildResponse(
+  private ResponseEntity<Result<Object>> buildResponse(
       ErrorCode errorCode, String message, Object data) {
     return ResponseEntity.status(errorCode.getHttpStatus())
-        .body(ApiResult.fail(errorCode, message, data));
+        .body(Result.fail(errorCode, message, data));
   }
 
   private String resolveMessage(String message) {

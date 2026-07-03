@@ -15,21 +15,23 @@ Java 后端项目模板，完成 Maven/Spring Boot
 
 ## 公共后端约定
 
-接口统一返回 `ApiResult<T>`：
+接口统一返回 `Result<T>`：
 
 ```json
 {
-  "code": "200",
+  "code": "00000",
   "message": "成功",
   "data": {},
   "traceId": "request-trace-id",
-  "timestamp": "2026-07-02T12:00:00"
+  "timestamp": "2026-07-02 12:00:00.000"
 }
 ```
 
+响应中的时间字段统一使用毫秒格式：`yyyy-MM-dd HH:mm:ss.SSS`，与 MySQL `DATETIME(3)` 保持一致。
+
 分页统一使用 `PageResult<T>`，字段包括 `records`、`total`、`pageNo`、`pageSize`、`pages`。
 
-业务失败时抛出 `BusinessException`，由 `GlobalExceptionHandler` 转为统一响应。参数校验使用
+业务失败时抛出 `ServiceException`，由 `GlobalExceptionHandler` 转为统一响应。参数校验使用
 Jakarta Validation 注解，例如 `@NotBlank`、`@NotNull`、`@Min`，Controller 入参使用 `@Valid`
 或 `@Validated` 触发校验。
 
@@ -64,8 +66,8 @@ cd D:\Codes\standard-java-coding\spring-boot-template
 .\mvnw.cmd clean verify
 ```
 包含：
-- Spotless 
-- Checkstyle 
-- 编译 
-- 单元测试 
+- Spotless
+- Checkstyle
+- 编译
+- 单元测试
 - 打包

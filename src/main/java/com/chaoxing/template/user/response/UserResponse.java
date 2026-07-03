@@ -1,6 +1,7 @@
 package com.chaoxing.template.user.response;
 
 import com.chaoxing.template.user.entity.UserEntity;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,13 +10,19 @@ import lombok.Setter;
 @Setter
 public class UserResponse {
 
+  private static final String DATE_TIME_MILLIS = "yyyy-MM-dd HH:mm:ss.SSS";
+
   private Long id;
   private String username;
   private String nickname;
   private String email;
   private String mobile;
   private Integer status;
+
+  @JsonFormat(pattern = DATE_TIME_MILLIS)
   private LocalDateTime createdAt;
+
+  @JsonFormat(pattern = DATE_TIME_MILLIS)
   private LocalDateTime updatedAt;
 
   public static UserResponse from(UserEntity entity) {

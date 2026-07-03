@@ -1,7 +1,7 @@
 package com.chaoxing.template.user.controller;
 
-import com.chaoxing.template.common.response.ApiResult;
 import com.chaoxing.template.common.response.PageResult;
+import com.chaoxing.template.common.response.Result;
 import com.chaoxing.template.user.request.UserCreateRequest;
 import com.chaoxing.template.user.request.UserQueryRequest;
 import com.chaoxing.template.user.request.UserUpdateRequest;
@@ -30,33 +30,33 @@ public class UserController {
 
   /** 创建后返回新用户信息，方便调用方立即拿到数据库生成的 ID。 */
   @PostMapping
-  public ApiResult<UserResponse> create(@Valid @RequestBody UserCreateRequest request) {
-    return ApiResult.success(userService.create(request));
+  public Result<UserResponse> create(@Valid @RequestBody UserCreateRequest request) {
+    return Result.success(userService.create(request));
   }
 
   @GetMapping("/{id}")
-  public ApiResult<UserResponse> getById(@Positive(message = "用户ID必须为正整数") @PathVariable Long id) {
-    return ApiResult.success(userService.getById(id));
+  public Result<UserResponse> getById(@Positive(message = "用户ID必须为正整数") @PathVariable Long id) {
+    return Result.success(userService.getById(id));
   }
 
   /** 查询参数绑定到 UserQueryRequest，并在进入 Service 前完成校验。 */
   @GetMapping
-  public ApiResult<PageResult<UserResponse>> page(@Valid UserQueryRequest request) {
-    return ApiResult.success(userService.page(request));
+  public Result<PageResult<UserResponse>> page(@Valid UserQueryRequest request) {
+    return Result.success(userService.page(request));
   }
 
   @PutMapping("/{id}")
-  public ApiResult<Void> update(
+  public Result<Void> update(
       @Positive(message = "用户ID必须为正整数") @PathVariable Long id,
       @Valid @RequestBody UserUpdateRequest request) {
     userService.update(id, request);
-    return ApiResult.success();
+    return Result.success();
   }
 
   /** 删除在 Service/Mapper 层实现为逻辑删除。 */
   @DeleteMapping("/{id}")
-  public ApiResult<Void> delete(@Positive(message = "用户ID必须为正整数") @PathVariable Long id) {
+  public Result<Void> delete(@Positive(message = "用户ID必须为正整数") @PathVariable Long id) {
     userService.delete(id);
-    return ApiResult.success();
+    return Result.success();
   }
 }

@@ -47,7 +47,7 @@ class GlobalExceptionHandlerTest {
   }
 
   @Test
-  void shouldHandleBusinessExceptionAndKeepTraceId() throws Exception {
+  void shouldHandleServiceExceptionAndKeepTraceId() throws Exception {
     mockMvc
         .perform(get("/test/business").header(TraceIdFilter.HEADER_TRACE_ID, TRACE_ID))
         .andExpect(status().isBadRequest())
@@ -73,7 +73,7 @@ class GlobalExceptionHandlerTest {
 
     @GetMapping("/business")
     public void business() {
-      throw new BusinessException("user name exists");
+      throw new ServiceException("user name exists");
     }
 
     @PostMapping("/validated")
