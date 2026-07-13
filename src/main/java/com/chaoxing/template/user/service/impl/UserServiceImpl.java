@@ -10,11 +10,17 @@ import com.chaoxing.template.user.request.UserQueryRequest;
 import com.chaoxing.template.user.request.UserUpdateRequest;
 import com.chaoxing.template.user.response.UserResponse;
 import com.chaoxing.template.user.service.UserService;
-import java.util.List;
+
+import java.lang.reflect.Array;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 @Service
@@ -52,6 +58,32 @@ public class UserServiceImpl implements UserService {
   @Override
   public UserResponse getById(Long id) {
     return UserResponse.from(getExistingUser(id));
+  }
+
+  @Override
+  public List<UserResponse> getByIds(List<Long> ids) {
+    // 判空
+    if (CollectionUtils.isEmpty(ids)) {
+      return Collections.emptyList();
+    }
+
+    // 仅用于数据库去重；LinkedHashSet 会保留第一次出现的顺序
+    Set<Long> distinctIdSet = new LinkedHashSet<Long>(ids);
+
+    List<UserEntity> userList = userMapper.selectByIds(new ArrayList<>(distinctIdSet));
+
+    Map<Long, UserResponse> responseById =
+      userList.stream()
+        .map(UserResponse::from)
+        .collect(Collectors.toMap(UserResponse::getId, Function.identity()));
+
+    // 使用原始 ids 重新组装，因此返回顺序、重复项和缺失项都符合请求
+    List<UserResponse> result = new ArrayList<UserResponse>();
+    for (Long id: ids) {
+      result.add(responseById.get(id));
+    }
+
+    return result;
   }
 
   @Override

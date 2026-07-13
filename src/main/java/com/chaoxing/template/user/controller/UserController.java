@@ -11,14 +11,10 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Validated
 @RestController
@@ -37,6 +33,16 @@ public class UserController {
   @GetMapping("/{id}")
   public Result<UserResponse> getById(@Positive(message = "用户ID必须为正整数") @PathVariable Long id) {
     return Result.success(userService.getById(id));
+  }
+
+  /**
+   * 批量查询用户信息，返回顺序与请求顺序一致，若某个用户不存在则返回 null。
+   * @param ids 用户 ID 列表
+   * @return 用户信息列表
+   */
+  @GetMapping("/batch")
+  public Result<List<UserResponse>> getByIds(@RequestParam List<Long> ids) {
+    return Result.success(userService.getByIds(ids));
   }
 
   /** 查询参数绑定到 UserQueryRequest，并在进入 Service 前完成校验。 */

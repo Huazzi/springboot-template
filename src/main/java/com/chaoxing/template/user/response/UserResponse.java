@@ -25,6 +25,12 @@ public class UserResponse {
   @JsonFormat(pattern = DATE_TIME_MILLIS)
   private LocalDateTime updatedAt;
 
+  /**
+   * 将数据库实体转换为响应对象
+   *
+   * @param entity 数据库实体
+   * @return 响应对象
+   */
   public static UserResponse from(UserEntity entity) {
     UserResponse response = new UserResponse();
     response.setId(entity.getId());

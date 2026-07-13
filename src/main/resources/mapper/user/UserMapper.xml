@@ -4,6 +4,7 @@
     "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.chaoxing.template.user.mapper.UserMapper">
 
+  <!-- 结果映射，确保数据库字段与实体类属性正确对应 -->
   <resultMap id="UserResultMap" type="com.chaoxing.template.user.entity.UserEntity">
     <id column="id" property="id"/>
     <result column="username" property="username"/>
@@ -16,6 +17,7 @@
     <result column="updated_at" property="updatedAt"/>
   </resultMap>
 
+  <!-- 公共列，避免重复书写 -->
   <sql id="BaseColumns">
     id,
     username,
@@ -70,6 +72,17 @@
     FROM sys_user
     WHERE id = #{id}
       AND deleted = 0
+  </select>
+
+  <select id="selectByIds" resultMap="UserResultMap">
+    SELECT
+    <include refid="BaseColumns"/>
+    FROM sys_user
+    WHERE deleted = 0
+      AND id IN
+      <foreach collection="ids" item="id" open="(" separator="," close=")">
+      #{id}
+      </foreach>
   </select>
 
   <select id="countByUsername" resultType="int">
