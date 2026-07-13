@@ -43,7 +43,7 @@ public class UserServiceImpl implements UserService {
     try {
       userMapper.insert(entity);
     } catch (DuplicateKeyException exception) {
-      // 唯一索引用于兜底处理多个并发请求同时通过前置检查的情况。
+      // 唯一索引用于兜底处理多个并发请求同时通过前置检查的情况
       throw new ServiceException("用户名已存在");
     }
     return getById(entity.getId());
