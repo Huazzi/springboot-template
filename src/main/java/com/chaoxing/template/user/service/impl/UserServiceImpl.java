@@ -11,7 +11,6 @@ import com.chaoxing.template.user.request.UserUpdateRequest;
 import com.chaoxing.template.user.response.UserResponse;
 import com.chaoxing.template.user.service.UserService;
 
-import java.lang.reflect.Array;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -67,17 +66,19 @@ public class UserServiceImpl implements UserService {
       return Collections.emptyList();
     }
 
-    // 仅用于数据库去重；LinkedHashSet 会保留第一次出现的顺序
+    // 去重：仅用于数据库去重；LinkedHashSet 会保留第一次出现的顺序
     Set<Long> distinctIdSet = new LinkedHashSet<Long>(ids);
 
+    // 批量查询
     List<UserEntity> userList = userMapper.selectByIds(new ArrayList<>(distinctIdSet));
 
+    // 将查询结果转换为 Map，便于按原始请求顺序组装返回结果
     Map<Long, UserResponse> responseById =
       userList.stream()
         .map(UserResponse::from)
         .collect(Collectors.toMap(UserResponse::getId, Function.identity()));
 
-    // 使用原始 ids 重新组装，因此返回顺序、重复项和缺失项都符合请求
+    // 组装：使用原始 ids 重新组装，因此返回顺序、重复项和缺失项都符合请求
     List<UserResponse> result = new ArrayList<UserResponse>();
     for (Long id: ids) {
       result.add(responseById.get(id));
