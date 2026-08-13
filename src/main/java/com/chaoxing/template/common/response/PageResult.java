@@ -3,6 +3,9 @@ package com.chaoxing.template.common.response;
 import java.util.List;
 import lombok.Getter;
 
+/**
+ * @param <T>
+ */
 @Getter
 public final class PageResult<T> {
 

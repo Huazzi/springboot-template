@@ -59,8 +59,8 @@
       #{mobile},
       #{status},
       0,
-      CURRENT_TIMESTAMP,
-      CURRENT_TIMESTAMP
+      CURRENT_TIMESTAMP(3),
+      CURRENT_TIMESTAMP(3)
     )
   </insert>
 
@@ -97,6 +97,21 @@
     LIMIT #{pageSize} OFFSET #{offset}
   </select>
 
+  <!-- loadMore：keyset 游标分页。使用 WHERE id < lastId 直接跳过已加载的数据，
+       深翻页性能恒定，不随翻页深度增长；lastId 为空表示第一页，仅按 pageSize 截取。 -->
+  <select id="selectLoadMore" resultMap="UserResultMap">
+    SELECT
+    <include refid="BaseColumns"/>
+    FROM sys_user
+    WHERE
+    <include refid="ActiveUserWhere"/>
+    <if test="query.lastId != null">
+      AND id &lt; #{query.lastId}
+    </if>
+    ORDER BY id DESC
+    LIMIT #{pageSize}
+  </select>
+
   <update id="updateById">
     UPDATE sys_user
     <set>
@@ -112,7 +127,7 @@
       <if test="status != null">
         status = #{status},
       </if>
-      updated_at = CURRENT_TIMESTAMP
+      updated_at = CURRENT_TIMESTAMP(3)
     </set>
     WHERE id = #{id}
       AND deleted = 0
@@ -121,7 +136,7 @@
   <update id="logicDeleteById">
     UPDATE sys_user
     SET deleted = 1,
-        updated_at = CURRENT_TIMESTAMP
+        updated_at = CURRENT_TIMESTAMP(3)
     WHERE id = #{id}
       AND deleted = 0
   </update>

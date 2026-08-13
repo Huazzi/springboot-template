@@ -3,12 +3,14 @@ package com.chaoxing.template.user.controller;
 import com.chaoxing.template.common.response.PageResult;
 import com.chaoxing.template.common.response.Result;
 import com.chaoxing.template.user.request.UserCreateRequest;
+import com.chaoxing.template.user.request.UserLoadMoreRequest;
 import com.chaoxing.template.user.request.UserQueryRequest;
 import com.chaoxing.template.user.request.UserUpdateRequest;
 import com.chaoxing.template.user.response.UserResponse;
 import com.chaoxing.template.user.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -43,6 +45,12 @@ public class UserController {
   @GetMapping
   public Result<PageResult<UserResponse>> page(@Valid UserQueryRequest request) {
     return Result.success(userService.page(request));
+  }
+
+  /** 加载更多：客户端传上一页最后一条 id，返回更旧的数据；lastId 为空表示第一页。 */
+  @GetMapping("/loadMore")
+  public Result<List<UserResponse>> loadMore(@Valid UserLoadMoreRequest request) {
+    return Result.success(userService.loadMore(request));
   }
 
   @PutMapping("/{id}")

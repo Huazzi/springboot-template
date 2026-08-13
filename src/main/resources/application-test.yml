@@ -1,8 +1,15 @@
 spring:
   datasource:
     url: "${DB_URL:jdbc:mysql://dev-mysql:3306/spring_boot_template?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}"
-    username: "${DB_USERNAME:root}"
-    password: "${DB_PASSWORD:hua12345}"
+    username: "${DB_USERNAME}"
+    password: "${DB_PASSWORD}"
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: hua12345
+      database: 0
 
 logging:
   level:

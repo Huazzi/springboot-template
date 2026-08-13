@@ -6,13 +6,20 @@ import com.chaoxing.template.common.response.PageResult;
 import com.chaoxing.template.user.entity.UserEntity;
 import com.chaoxing.template.user.mapper.UserMapper;
 import com.chaoxing.template.user.request.UserCreateRequest;
+import com.chaoxing.template.user.request.UserLoadMoreRequest;
 import com.chaoxing.template.user.request.UserQueryRequest;
 import com.chaoxing.template.user.request.UserUpdateRequest;
 import com.chaoxing.template.user.response.UserResponse;
 import com.chaoxing.template.user.service.UserService;
+
+import java.time.Duration;
 import java.util.List;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -23,7 +30,21 @@ public class UserServiceImpl implements UserService {
 
   private static final int DEFAULT_ENABLED_STATUS = 1;
 
+  /**
+   * 用户详情 Redis value 的 key 前缀
+   */
+  private static final String USER_DETAIL_KEY_PREFIX = "user:detail:";
+
+  /**
+   * 过期时间为 30 分钟
+   */
+  private static final Duration USER_CACHE_TTL = Duration.ofMinutes(30);
+
   private final UserMapper userMapper;
+
+  private final StringRedisTemplate stringRedisTemplate;
+
+  private final ObjectMapper objectMapper;
 
   @Override
   @Transactional(rollbackFor = Exception.class)
@@ -49,11 +70,44 @@ public class UserServiceImpl implements UserService {
     return getById(entity.getId());
   }
 
+  /**
+   * 根据 id 查询用户信息
+   * @param id 用户ID
+   * @return 用户信息响应体
+   */
   @Override
   public UserResponse getById(Long id) {
-    return UserResponse.from(getExistingUser(id));
+    String key = USER_DETAIL_KEY_PREFIX + id;
+
+    // 1. 先查缓存
+    String cachedUserDetail = stringRedisTemplate.opsForValue().get(key);
+    if (!StringUtils.isEmpty(cachedUserDetail)) {
+      try {
+        return objectMapper.readValue(cachedUserDetail, UserResponse.class);
+      } catch (JsonProcessingException e) {
+        stringRedisTemplate.delete(key);
+      }
+    }
+
+    // 2.  缓存未命中，查数据库
+    UserResponse response = UserResponse.from(getExistingUser(id));
+
+    // 3. 回填缓存，并设置 30 分钟过期
+    try {
+      stringRedisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(response), USER_CACHE_TTL);
+    } catch (JsonProcessingException e) {
+      // 序列化失败不阻塞主流程，本次不写缓存即可
+    }
+
+    return response;
   }
 
+  /**
+   * 分页查询
+   *
+   * @param request 用户请求实体
+   * @return 结果响应体
+   */
   @Override
   public PageResult<UserResponse> page(UserQueryRequest request) {
     long pageNo = Math.max(request.getPageNo(), 1);
@@ -70,6 +124,19 @@ public class UserServiceImpl implements UserService {
     return PageResult.of(records, total, pageNo, pageSize);
   }
 
+  /** 加载更多：不做 count 查询，直接按游标取一页数据。 是否还有更多由调用方判断：返回条数 &lt; pageSize 即表示已到末尾。 */
+  @Override
+  public List<UserResponse> loadMore(UserLoadMoreRequest request) {
+    // 1 <= pageSize <= 100
+    int pageSize = (int) Math.min(Math.max(request.getPageSize(), 1), 100);
+    return userMapper.selectLoadMore(request, pageSize).stream().map(UserResponse::from).toList();
+  }
+
+  /**
+   * 更新用户信息
+   * @param id 用户ID
+   * @param request 更新请求体
+   */
   @Override
   @Transactional(rollbackFor = Exception.class)
   public void update(Long id, UserUpdateRequest request) {
@@ -89,6 +156,8 @@ public class UserServiceImpl implements UserService {
     if (updated == 0) {
       throw userNotFoundException();
     }
+    // 删除过时的 Redis 缓存
+    stringRedisTemplate.delete(USER_DETAIL_KEY_PREFIX + id);
   }
 
   @Override
@@ -98,6 +167,9 @@ public class UserServiceImpl implements UserService {
     if (deleted == 0) {
       throw userNotFoundException();
     }
+
+    // 删除过时的 Redis 缓存
+    stringRedisTemplate.delete(USER_DETAIL_KEY_PREFIX + id);
   }
 
   private UserEntity getExistingUser(Long id) {

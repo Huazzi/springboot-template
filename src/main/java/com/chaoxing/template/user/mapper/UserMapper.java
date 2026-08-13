@@ -1,6 +1,7 @@
 package com.chaoxing.template.user.mapper;
 
 import com.chaoxing.template.user.entity.UserEntity;
+import com.chaoxing.template.user.request.UserLoadMoreRequest;
 import com.chaoxing.template.user.request.UserQueryRequest;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
@@ -17,12 +18,17 @@ public interface UserMapper {
   /** 插入前检查用于返回友好提示，数据库唯一索引仍是最终兜底。 */
   int countByUsername(String username);
 
+  /** 按条件进行查询总数据条数 * */
   long countByCondition(@Param("query") UserQueryRequest query);
 
   List<UserEntity> selectPage(
       @Param("query") UserQueryRequest query,
       @Param("offset") long offset,
       @Param("pageSize") long pageSize);
+
+  /** 加载更多：keyset 游标分页，lastId 为空表示第一页；按 id 倒序取 pageSize 条。 */
+  List<UserEntity> selectLoadMore(
+      @Param("query") UserLoadMoreRequest query, @Param("pageSize") int pageSize);
 
   int updateById(UserEntity entity);
 
