@@ -11,17 +11,17 @@ import com.chaoxing.template.user.request.UserQueryRequest;
 import com.chaoxing.template.user.request.UserUpdateRequest;
 import com.chaoxing.template.user.response.UserResponse;
 import com.chaoxing.template.user.service.UserService;
-
-import java.time.Duration;
-import java.util.List;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 
 @Service
@@ -30,14 +30,10 @@ public class UserServiceImpl implements UserService {
 
   private static final int DEFAULT_ENABLED_STATUS = 1;
 
-  /**
-   * 用户详情 Redis value 的 key 前缀
-   */
+  /** 用户详情 Redis value 的 key 前缀 */
   private static final String USER_DETAIL_KEY_PREFIX = "user:detail:";
 
-  /**
-   * 过期时间为 30 分钟
-   */
+  /** 过期时间为 30 分钟 */
   private static final Duration USER_CACHE_TTL = Duration.ofMinutes(30);
 
   private final UserMapper userMapper;
@@ -72,6 +68,7 @@ public class UserServiceImpl implements UserService {
 
   /**
    * 根据 id 查询用户信息
+   *
    * @param id 用户ID
    * @return 用户信息响应体
    */
@@ -81,7 +78,7 @@ public class UserServiceImpl implements UserService {
 
     // 1. 先查缓存
     String cachedUserDetail = stringRedisTemplate.opsForValue().get(key);
-    if (!StringUtils.isEmpty(cachedUserDetail)) {
+    if (StringUtils.hasText(cachedUserDetail)) {
       try {
         return objectMapper.readValue(cachedUserDetail, UserResponse.class);
       } catch (JsonProcessingException e) {
@@ -93,11 +90,7 @@ public class UserServiceImpl implements UserService {
     UserResponse response = UserResponse.from(getExistingUser(id));
 
     // 3. 回填缓存，并设置 30 分钟过期
-    try {
-      stringRedisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(response), USER_CACHE_TTL);
-    } catch (JsonProcessingException e) {
-      // 序列化失败不阻塞主流程，本次不写缓存即可
-    }
+    putCache(key, response);
 
     return response;
   }
@@ -134,6 +127,7 @@ public class UserServiceImpl implements UserService {
 
   /**
    * 更新用户信息
+   *
    * @param id 用户ID
    * @param request 更新请求体
    */
@@ -156,6 +150,7 @@ public class UserServiceImpl implements UserService {
     if (updated == 0) {
       throw userNotFoundException();
     }
+
     // 删除过时的 Redis 缓存
     stringRedisTemplate.delete(USER_DETAIL_KEY_PREFIX + id);
   }
@@ -178,6 +173,39 @@ public class UserServiceImpl implements UserService {
       throw userNotFoundException();
     }
     return entity;
+  }
+
+  /**
+   * 回填缓存：如果在事务中，推迟到事务提交之后再写入，避免回滚后留下脏数据
+   *
+   * @param key redis键
+   * @param response 响应体
+   */
+  private void putCache(String key, UserResponse response) {
+    if (TransactionSynchronizationManager.isSynchronizationActive()) {
+      // 在事务中，在提交之后再回写缓存
+      TransactionSynchronizationManager.registerSynchronization(
+          new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+              writeCache(key, response);
+            }
+          });
+    } else {
+      // 不在事务中，直接回写缓存
+      writeCache(key, response);
+    }
+  }
+
+  /** 回填缓存 */
+  private void writeCache(String key, UserResponse response) {
+    try {
+      stringRedisTemplate
+          .opsForValue()
+          .set(key, objectMapper.writeValueAsString(response), USER_CACHE_TTL);
+    } catch (JsonProcessingException e) {
+      // 序列化失败不阻塞主流程，本次不写入即可
+    }
   }
 
   private boolean hasUpdateContent(UserEntity entity) {
